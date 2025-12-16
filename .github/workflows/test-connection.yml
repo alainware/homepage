@@ -16,7 +16,7 @@ jobs:
         with:
           access_key_id: ${{ secrets.ACCESSKEY }}
           secret_access_key: ${{ secrets.SECRETACCESSKEY }}
-          region: 'na-mexico-city-1'
+          region: 'la-north-2'
         env:
           LANG: 'en_US.UTF-8'
 
