@@ -1,0 +1,40 @@
+name: Test Huawei Cloud Connection
+
+on:
+  workflow_dispatch:  # Just manual execution
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Huawei Cloud
+        uses: huaweicloud/configure-obs-credentials-action@v1
+        with:
+          access-key-id: ${{ secrets.OBS_AK }}
+          secret-access-key: ${{ secrets.OBS_SK }}
+          region: ${{ secrets.HWC_REGION }}
+
+      - name: Install obsutil
+        run: |
+          wget https://obs-community.obs.cn-north-1.myhuaweicloud.com/obsutil/current/obsutil_linux_amd64.tar.gz
+          tar -xzf obsutil_linux_amd64.tar.gz
+          ./obsutil_linux_amd64/obsutil version
+
+      - name: Test connection
+        run: |
+          # Configurar obsutil
+          ./obsutil_linux_amd64/obsutil config -i=${{ secrets.OBS_AK }} -k=${{ secrets.OBS_SK }} -e=${{ secrets.OBS_ENDPOINT }}
+          
+          # Probar listado de buckets
+          echo "📦 Listando buckets..."
+          ./obsutil_linux_amd64/obsutil ls
+          
+          # Probar bucket específico
+          echo "📁 Contenido del bucket..."
+          ./obsutil_linux_amd64/obsutil ls obs://${{ secrets.OBS_BUCKET }}/
+          
+          echo "✅ Conexión exitosa con Huawei Cloud!"

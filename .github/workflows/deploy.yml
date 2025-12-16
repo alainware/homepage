@@ -1,0 +1,78 @@
+name: Deploy React to OBS
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'       # Only executes when there are active changes in frontend
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./frontend
+
+      - name: Build React app
+        run: npm run build
+        working-directory: ./frontend
+        env:
+          NODE_ENV: production
+
+      - name: Configure Huawei Cloud
+        uses: huaweicloud/configure-obs-credentials-action@v1
+        with:
+          access-key-id: ${{ secrets.OBS_AK }}
+          secret-access-key: ${{ secrets.OBS_SK }}
+          region: na-mexico-city-1  # HW Cloud Region
+
+      - name: Install obsutil
+        run: |
+          wget https://obs-community.obs.cn-north-1.myhuaweicloud.com/obsutil/current/obsutil_linux_amd64.tar.gz
+          tar -xzf obsutil_linux_amd64.tar.gz
+          sudo mv obsutil_linux_amd64/obsutil /usr/local/bin/
+
+      - name: Configure obsutil
+        run: |
+          obsutil config -i=${{ secrets.OBS_AK }} -k=${{ secrets.OBS_SK }} -e=obs.na-mexico-city-1.myhuaweicloud.com
+
+      - name: Deploy to OBS
+        run: |
+          # Subir archivos build
+          obsutil sync ./frontend/dist/ obs://${{ secrets.OBS_BUCKET }}/ -f -u -v
+          
+          # Configurar metadata para archivos HTML (importante!)
+          obsutil setmeta obs://${{ secrets.OBS_BUCKET }}/index.html "content-type:text/html"
+          obsutil setmeta obs://${{ secrets.OBS_BUCKET }}/404.html "content-type:text/html" || true
+          
+          echo "✅ React app desplegada"
+
+      - name: Purge CDN Cache
+        run: |
+          # Script simple para purge usando curl
+          curl -X POST "https://cdn.na-mexico-city-1.myhuaweicloud.com/v1.0/cdn/historytasks" \
+            -H "Content-Type: application/json" \
+            -H "X-Auth-Token: ${{ secrets.HUAWEI_TOKEN }}" \
+            -d '{"refresh_task":{"type":"directory","urls":["https://www.alainware.com/"]}}' \
+            || echo "⚠️ Purge falló, pero deploy continuó"
+        continue-on-error: true
+
+      - name: Deployment status
+        run: |
+          echo "🚀 React App desplegada exitosamente!"
+          echo "👉 URL: https://www.alainware.com"
+          echo "👉 Build folder: frontend/dist/"
+          echo "👉 Bucket: ${{ secrets.OBS_BUCKET }}"
