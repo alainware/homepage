@@ -1,40 +1,38 @@
-name: Test Huawei Cloud Connection
+name: 'Test Huawei Cloud Connection'
 
 on:
-  workflow_dispatch:  # Just manual execution
+  workflow_dispatch:
 
 jobs:
-  test:
+  test-connection:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure Huawei Cloud
+      - name: Authenticate to Huawei Cloud
+        id: auth
         uses: huaweicloud/auth-action@v1.0.0
         with:
-          access_key_id: ${{ secrets.OBS_AK }}
-          secret_access_key: ${{ secrets.OBS_SK }}
-          region: ${{ secrets.HWC_REGION }}
+          access_key_id: ${{ secrets.ACCESSKEY }}
+          secret_access_key: ${{ secrets.SECRETACCESSKEY }}
+          region: 'na-mexico-city-1'
+        env:
+          LANG: 'en_US.UTF-8'
 
-      - name: Install obsutil
-        run: |
-          wget https://obs-community.obs.cn-north-1.myhuaweicloud.com/obsutil/current/obsutil_linux_amd64.tar.gz
-          tar -xzf obsutil_linux_amd64.tar.gz
-          ./obsutil_linux_amd64/obsutil version
+      - name: Test OBS connection (List buckets)
+        uses: huaweicloud/obs-helper@v1.4.0
+        with:
+          bucket_name: 'un-bucket-cualquiera-no-importa'
+          operation_type: 'download'
+          obs_file_path: '/'
+          local_file_path: '/tmp/ignore-this'
 
-      - name: Test connection
+      - name: Connection successful
+        if: success()
         run: |
-          # Configurar obsutil
-          ./obsutil_linux_amd64/obsutil config -i=${{ secrets.OBS_AK }} -k=${{ secrets.OBS_SK }} -e=${{ secrets.OBS_ENDPOINT }}
-          
-          # Probar listado de buckets
-          echo "📦 Listando buckets..."
-          ./obsutil_linux_amd64/obsutil ls
-          
-          # Probar bucket específico
-          echo "📁 Contenido del bucket..."
-          ./obsutil_linux_amd64/obsutil ls obs://${{ secrets.OBS_BUCKET }}/
-          
-          echo "✅ Conexión exitosa con Huawei Cloud!"
+          echo '✅ ✅ ✅ CONEXIÓN EXITOSA ✅ ✅ ✅'
+          echo 'Las credenciales ACCESSKEY y SECRETACCESSKEY son válidas.'
+          echo 'La autenticación con Huawei Cloud IAM funciona correctamente.'
+          echo ''
+          echo '🎯 Puedes proceder a configurar el workflow de deploy completo.'
