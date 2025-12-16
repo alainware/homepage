@@ -21,7 +21,7 @@ jobs:
           LANG: 'en_US.UTF-8'
 
       - name: Test OBS connection (List buckets)
-        uses: huaweicloud/obs-helper@v1.4.0
+        uses: huaweicloud/obs-helper@v1.0.0
         with:
           bucket_name: 'un-bucket-cualquiera-no-importa'
           operation_type: 'download'
