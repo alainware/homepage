@@ -23,7 +23,7 @@ jobs:
       - name: Test OBS connection (List buckets)
         uses: huaweicloud/obs-helper@v1.0.0
         with:
-          bucket_name: 'un-bucket-cualquiera-no-importa'
+          bucket_name: ${{ secrets.OBS_BUCKET }}
           operation_type: 'download'
           obs_file_path: '/'
           local_file_path: '/tmp/ignore-this'
